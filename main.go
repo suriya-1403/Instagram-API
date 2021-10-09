@@ -136,7 +136,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			{"imageURL", bson.D{
 				{"url", post.ImageURL.URl},
 			}},
-			{"time", ti},
+			{"time", ti.String()},
 		}},
 	}
 
@@ -175,9 +175,8 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 }
 func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	var params = routing.Vars(r)
-
+	//var posts []models.Post
 	//Get id from parameters
 	id, _ := primitive.ObjectIDFromHex(params["uid"])
 
@@ -186,17 +185,45 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	// Create filter
 	filter := bson.M{"_uid": id}
 
-	resultDoc := collectionPost.FindOne(context.TODO(), filter)
-	//if err != nil {
-	//	database_Connect.GetError(err, w)
-	//	return
-	//}
-	elem := &Post_main{}
-	err := resultDoc.Decode(elem)
+	cur, err := collectionPost.Find(context.TODO(), filter)
 	if err != nil {
-		log.Fatal(err)
+		database_Connect.GetError(err, w)
+		return
 	}
-	json.NewEncoder(w).Encode(elem.ImageurlMain)
+
+	// Close the cursor once finished
+	/*A defer statement defers the execution of a function until the surrounding function returns.
+	simply, run cur.Close() process but after cur.Next() finished.*/
+	defer cur.Close(context.TODO())
+
+	for cur.Next(context.TODO()) {
+
+		// create a value into which the single document can be decoded
+		var post models.Post
+		// & character returns the memory address of the following variable.
+		err := cur.Decode(&post) // decode similar to deserialize process.
+		if err != nil {
+			log.Fatal(err)
+		}
+		//elem := &Post_main{}
+
+		// add item our array
+		//posts = append(posts, post)
+		json.NewEncoder(w).Encode(post.ImageURL)
+	}
+
+	//if err := cur.Err(); err != nil {
+	//	log.Fatal(err)
+	//}
+
+	//json.NewEncoder(w).Encode(posts)
+	//
+	//elem := &Post_main{}
+	//err := resultDoc.Decode(elem)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//json.NewEncoder(w).Encode(elem.ImageurlMain)
 
 }
 func main() {
