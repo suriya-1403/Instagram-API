@@ -44,4 +44,10 @@ You are required to Design and Develop an HTTP JSON API capable of the following
 </ol>
 
 # Output ScreenShots
-
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/:post:%7Bid%7D.png)
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/:posts:users:%7Bid%7D.png)
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/:user:%7Bid%7D.png)
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/:users%20insert.png)
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/:users.png)
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/postdb.png)
+![image](https://github.com/suriya-1403/Instagram-API/blob/Main/images/userdb.png)
