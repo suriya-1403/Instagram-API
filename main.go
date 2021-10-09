@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
+	bson "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"net/http"
@@ -115,7 +115,9 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var post models.Post
 	// we decode our body request params
 	_ = json.NewDecoder(r.Body).Decode(&post)
-
+	//post = bson.D{
+	//		{"time",  primitive.Timestamp{T:uint32(time.Now().Unix())}},
+	//	}
 	// insert our book model.
 	result, err := collectionPost.InsertOne(context.TODO(), post)
 
@@ -124,32 +126,22 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("Post Created!!!")
-	filter := bson.M{"_id": post.ID}
-	ti := time.Now()
-	_ = json.NewDecoder(r.Body).Decode(&post)
-	json.NewEncoder(w).Encode(result)
-	// prepare update model.
-	update := bson.D{
+	filter := bson.D{{"_uid", post.ID}}
+	newTime := bson.D{
 		{"$set", bson.D{
-			{"_uid", post.UID},
-			{"caption", post.Caption},
-			{"imageURL", bson.D{
-				{"url", post.ImageURL.URl},
-			}},
-			{"time", ti.String()},
+			{"time", primitive.Timestamp{T: uint32(time.Now().Unix())}},
 		}},
 	}
-
-	err = collectionPost.FindOneAndUpdate(context.TODO(), filter, update).Decode(&post)
-
+	res, err := collectionPost.UpdateOne(context.TODO(), filter, newTime)
 	if err != nil {
-		database_Connect.GetError(err, w)
-		return
+		log.Fatal(err)
 	}
+	updatedObject := *res
+	fmt.Printf("The matched count is : %d, the modified count is : %d", updatedObject.MatchedCount, updatedObject.ModifiedCount)
+	//updateTime(w,r)
+	//result = context.TODO()
+	json.NewEncoder(w).Encode(result)
 
-	//post.ID =
-
-	//json.NewEncoder(w).Encode(post)
 }
 
 func getPost(w http.ResponseWriter, r *http.Request) {
