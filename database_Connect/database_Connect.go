@@ -10,15 +10,6 @@ import (
 	"net/http"
 )
 
-//clientOptions := options.Client().
-//
-//ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-//defer cancel()
-//client, err := mongo.Connect(ctx, clientOptions)
-//if err != nil {
-//log.Fatal(err)
-//}
-
 // ConnectDB : This is helper function to connect mongoDB
 // If you want to export your function. You must to start upper case function name. Otherwise you won't see your function when you import that on other class.
 func ConnectDB() (*mongo.Collection, *mongo.Collection) {
@@ -37,7 +28,6 @@ func ConnectDB() (*mongo.Collection, *mongo.Collection) {
 
 	collection_user := client.Database("Instagram_API").Collection("Users")
 	collection_post := client.Database("Instagram_API").Collection("Post")
-
 
 	return collection_user, collection_post
 }
@@ -62,10 +52,4 @@ func GetError(err error, w http.ResponseWriter) {
 
 	w.WriteHeader(response.StatusCode)
 	w.Write(message)
-}
-
-// Configuration model
-type Configuration struct {
-	Port             string
-	ConnectionString string
 }
