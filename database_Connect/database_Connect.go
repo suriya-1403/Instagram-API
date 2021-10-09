@@ -26,10 +26,10 @@ func ConnectDB() (*mongo.Collection, *mongo.Collection) {
 
 	fmt.Println("Connected to MongoDB!")
 
-	collection_user := client.Database("Instagram_API").Collection("Users")
-	collection_post := client.Database("Instagram_API").Collection("Post")
+	collectionUser := client.Database("Instagram_API").Collection("Users")
+	collectionPost := client.Database("Instagram_API").Collection("Post")
 
-	return collection_user, collection_post
+	return collectionUser, collectionPost
 }
 
 // ErrorResponse : This is error model.

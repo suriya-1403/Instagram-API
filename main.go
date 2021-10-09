@@ -20,12 +20,14 @@ import (
 	"time"
 )
 
+// Creating hash for ciper conversion
 func createHash(key string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(key))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
+// encrypt function to encrypt the password
 func encrypt(data []byte, passphrase string) []byte {
 	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
 	gcm, err := cipher.NewGCM(block)
@@ -39,6 +41,8 @@ func encrypt(data []byte, passphrase string) []byte {
 	ciphertext := gcm.Seal(nonce, nonce, data, nil)
 	return ciphertext
 }
+
+//decrypt function to decrypt the password
 func decrypt(data []byte, passphrase string) []byte {
 	key := []byte(createHash(passphrase))
 	block, err := aes.NewCipher(key)
@@ -58,8 +62,10 @@ func decrypt(data []byte, passphrase string) []byte {
 	return plaintext
 }
 
+// storing the user, post collection from the database for manipulations
 var collectionUser, collectionPost = database_Connect.ConnectDB()
 
+// getUsers function is to view all the users of the user collection which is GET method
 func getUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var users []models.User
@@ -83,6 +89,8 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(users)
 }
+
+// getUser is to display particular user where id is given in the url which is GET method
 func getUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var user models.User
@@ -99,6 +107,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// createUser is to create user and also in this func password is also encrypted which is POST methos
 func createUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -127,6 +136,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+// createPost is to create the post and also store the timestamp of the post which is POST method
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Context-Type", "application/json")
 	var post models.Post
@@ -152,6 +162,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+// getPost is to display the post from the post id which is a GET method
 func getPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var post models.Post
@@ -165,6 +176,8 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(post)
 }
+
+// getPosts is to display all the post of a particular user which is GET method
 func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var params = routing.Vars(r)
@@ -188,8 +201,16 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+/*
+Here I haven't installed any package from the internet except:
+	1. monogoDB go driver
+	2. standard library of golang
+but for routing I have implemented the router in routing folder just like Mux package
+where all are standard libraries.
+*/
 func main() {
-	mux := routing.NewRouter()
+	mux := routing.NewRouter() // creating the Router
 	mux.HandleFunc("/users", getUsers).Methods("GET")
 	mux.HandleFunc("/users/{id}", getUser).Methods("GET")
 	mux.HandleFunc("/users", createUser).Methods("POST")
