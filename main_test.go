@@ -110,3 +110,14 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("could not read response: %v", err)
 	}
 }
+
+func TestEncrypt(t *testing.T) {
+	value := "HelloWorld"
+
+	tes := encrypt([]byte(value), "password")
+	expected := string(decrypt(tes, "password"))
+	if value != expected {
+		t.Errorf("Experted status %s; got %s", expected, tes)
+	}
+
+}

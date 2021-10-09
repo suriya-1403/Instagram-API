@@ -5,14 +5,58 @@ import (
 	"Instagram-API/models"
 	"Instagram-API/routing"
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
 	"log"
 	"net/http"
 	"time"
 )
+
+func createHash(key string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(key))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func encrypt(data []byte, passphrase string) []byte {
+	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
+	}
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
+	return ciphertext
+}
+func decrypt(data []byte, passphrase string) []byte {
+	key := []byte(createHash(passphrase))
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err.Error())
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonceSize := gcm.NonceSize()
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+	return plaintext
+}
 
 var collectionUser, collectionPost = database_Connect.ConnectDB()
 
@@ -67,6 +111,19 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("Created!!!")
+	filter := bson.D{{"email", user.Email}}
+	ciper := encrypt([]byte(user.Password), "password")
+	newPassEncry := bson.D{
+		{"$set", bson.D{
+			{"password", ciper},
+		}},
+	}
+	res, err := collectionUser.UpdateOne(context.TODO(), filter, newPassEncry)
+	if err != nil {
+		database_Connect.GetError(err, w)
+	}
+	updatedObject := *res
+	fmt.Printf("The matched count is : %d, the modified count is : %d", updatedObject.MatchedCount, updatedObject.ModifiedCount)
 	json.NewEncoder(w).Encode(result)
 }
 
