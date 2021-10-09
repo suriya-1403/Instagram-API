@@ -13,42 +13,54 @@ import (
 	"net/http"
 	"time"
 )
+
 var collectionUser, collectionPost = database_Connect.ConnectDB()
 
+type Post_main struct {
+	IdMain              primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	UidMain             primitive.ObjectID `json:"_uid,omitempty" bson:"_uid,omitempty"`
+	CaptionMain         string             `json:"caption,omitempty" bson:"caption,omitempty"`
+	ImageurlMain        *imageurlMain      `json:"imageURL,omitempty" bson:"imageURL,omitempty"`
+	PostedtimestampMain time.Time          `json:"time,omitempty" bson:"time"`
+}
+type imageurlMain struct {
+	URl string `json:"url,omitempty" bson:"url,omitempty"`
+}
+
 func getUsers(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		var users []models.User
-		cur, err := collectionUser.Find(context.TODO(), bson.M{})
+	w.Header().Set("Content-Type", "application/json")
+	var users []models.User
+	cur, err := collectionUser.Find(context.TODO(), bson.M{})
 
+	if err != nil {
+		database_Connect.GetError(err, w)
+		return
+	}
+
+	// Close the cursor once finished
+	/*A defer statement defers the execution of a function until the surrounding function returns.
+	simply, run cur.Close() process but after cur.Next() finished.*/
+	defer cur.Close(context.TODO())
+
+	for cur.Next(context.TODO()) {
+
+		// create a value into which the single document can be decoded
+		var user models.User
+		// & character returns the memory address of the following variable.
+		err := cur.Decode(&user) // decode similar to deserialize process.
 		if err != nil {
-			database_Connect.GetError(err,w)
-			return
-		}
-
-		// Close the cursor once finished
-		/*A defer statement defers the execution of a function until the surrounding function returns.
-		simply, run cur.Close() process but after cur.Next() finished.*/
-		defer cur.Close(context.TODO())
-
-		for cur.Next(context.TODO()) {
-
-			// create a value into which the single document can be decoded
-			var user models.User
-			// & character returns the memory address of the following variable.
-			err := cur.Decode(&user) // decode similar to deserialize process.
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// add item our array
-			users = append(users, user)
-		}
-
-		if err := cur.Err(); err != nil {
 			log.Fatal(err)
 		}
 
-		json.NewEncoder(w).Encode(users) // encode similar to serialize process.
+		// add item our array
+		users = append(users, user)
+	}
+
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	json.NewEncoder(w).Encode(users) // encode similar to serialize process.
 	//} else {
 	//	fmt.Print("Not Get")
 	//}
@@ -98,8 +110,8 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func CreatePost(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Context-Type","application/json")
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Context-Type", "application/json")
 	var post models.Post
 	// we decode our body request params
 	_ = json.NewDecoder(r.Body).Decode(&post)
@@ -124,7 +136,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request){
 			{"imageURL", bson.D{
 				{"url", post.ImageURL.URl},
 			}},
-			{"time",ti},
+			{"time", ti},
 		}},
 	}
 
@@ -161,7 +173,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(post)
 }
-func getPosts(w http.ResponseWriter, r *http.Request)  {
+func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var params = routing.Vars(r)
@@ -169,60 +181,31 @@ func getPosts(w http.ResponseWriter, r *http.Request)  {
 	//Get id from parameters
 	id, _ := primitive.ObjectIDFromHex(params["uid"])
 
-	var post models.Post
+	//var post models.Post
 
 	// Create filter
 	filter := bson.M{"_uid": id}
 
-	//ti := time.Now()
-	//_ = json.NewDecoder(r.Body).Decode(&post)
-	//json.NewEncoder(w).Encode(result)
-
-	err := collectionPost.FindOne(context.TODO(), filter).Decode(&post)
-
-	if err != nil {
-		database_Connect.GetError(err, w)
-		return
-	}
-
-	json.NewEncoder(w).Encode(post)
+	resultDoc := collectionPost.FindOne(context.TODO(), filter)
 	//if err != nil {
 	//	database_Connect.GetError(err, w)
 	//	return
 	//}
-	//
-	//// Close the cursor once finished
-	//defer cur.Close(context.TODO())
-	//
-	//for cur.Next(context.TODO()) {
-	//
-	//	// create a value into which the single document can be decoded
-	//	var post models.Post
-	//	// & character returns the memory address of the following variable.
-	//	err := cur.Decode(&post) // decode similar to deserialize process.
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//
-	//	// add item our array
-	//	posts = append(posts, post)
-	//}
+	elem := &Post_main{}
+	err := resultDoc.Decode(elem)
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.NewEncoder(w).Encode(elem.ImageurlMain)
 
-	//if err := cur.Err(); err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//json.NewEncoder(w).Encode(post) // encode similar to serialize process.
 }
-func main(){
+func main() {
 	mux := routing.NewRouter()
 	mux.HandleFunc("/api/users", getUsers).Methods("GET")
 	mux.HandleFunc("/api/users/{id}", getUser).Methods("GET")
 	mux.HandleFunc("/api/users", createUser).Methods("POST")
-	mux.HandleFunc("/api/posts",CreatePost).Methods("POST")
+	mux.HandleFunc("/api/posts", CreatePost).Methods("POST")
 	mux.HandleFunc("/api/posts/{id}", getPost).Methods("GET")
 	mux.HandleFunc("/api/posts/users/{uid}", getPosts).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
-
-
